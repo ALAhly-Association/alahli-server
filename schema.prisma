@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum Role {
+  PRESIDENT
+  SUPERVISOR
+  MEMBER
+}
+
+enum Status {
+  ACTIVE
+  FROZEN
+}
+
+model User {
+  id                Int          @id @default(autoincrement())
+  username          String?      @unique   // للرئيس فقط
+  membershipNumber  String?      @unique   // للأعضاء/المشرفين
+  fullName          String
+  email             String?
+  phone             String?
+  nid               String?
+  passwordHash      String
+  role              Role
+  status            Status       @default(ACTIVE)
+  points            Int          @default(0)
+
+  // ====== علاقات المجموعات ======
+  // عضو ضمن مجموعة واحدة (العلاقة المسماة GroupMembers)
+  groupId           Int?
+  group             Group?       @relation("GroupMembers", fields: [groupId], references: [id])
+
+  // كمشرف: يشرف على صفر/أكثر من مجموعة (العلاقة المسماة GroupSupervisor)
+  groupsSupervising Group[]      @relation("GroupSupervisor")
+
+  // ====== علاقات الحضور ======
+  attendances       Attendance[] // الطرف المقابل لـ Attendance.user
+
+  createdAt         DateTime     @default(now())
+
+  @@index([role])
+}
+
+model PendingUser {
+  id               Int      @id @default(autoincrement())
+  fullName         String
+  membershipNumber String   @unique
+  email            String?
+  phone            String?
+  nid              String?
+  passwordHash     String
+  createdAt        DateTime @default(now())
+}
+
+model Group {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+
+  // مشرف المجموعة (طرف 1 من علاقة GroupSupervisor)
+  supervisorId Int?
+  supervisor   User?    @relation("GroupSupervisor", fields: [supervisorId], references: [id])
+
+  // أعضاء المجموعة (طرف متعدد من علاقة GroupMembers)
+  members      User[]   @relation("GroupMembers")
+
+  createdAt    DateTime @default(now())
+}
+
+enum MatchType {
+  FOOTBALL
+  OTHER
+  TIFO
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+model Match {
+  id          Int          @id @default(autoincrement())
+  title       String
+  type        MatchType
+  date        DateTime
+  location    String
+  points      Int          @default(0)
+  locked      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  attendance  Attendance[]
+}
+
+model Attendance {
+  id        Int                @id @default(autoincrement())
+  matchId   Int
+  userId    Int
+  status    AttendanceStatus
+  scannedAt DateTime           @default(now())
+
+  match     Match              @relation(fields: [matchId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
+
+  @@unique([matchId, userId]) // عضو واحد لكل مباراة
+  @@index([userId, status])
+}
