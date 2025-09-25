@@ -45,3 +45,4 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+const { auth, requireRole } = require('./middleware/jwt');
