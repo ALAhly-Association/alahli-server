@@ -83,3 +83,4 @@ router.post('/register', async (req,res)=>{
 });
 
 module.exports = router;
+const { auth, requireRole } = require('./middleware/jwt');
