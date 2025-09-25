@@ -111,3 +111,4 @@ router.post('/:groupId/add-member', requireAuth, requireRole('PRESIDENT'), async
 });
 
 module.exports = router;
+const { auth, requireRole } = require('./middleware/jwt');
