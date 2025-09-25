@@ -165,3 +165,4 @@ router.get('/:matchId/stats', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+const { auth, requireRole } = require('./middleware/jwt');
